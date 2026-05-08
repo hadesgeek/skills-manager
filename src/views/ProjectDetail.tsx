@@ -31,6 +31,7 @@ import { BatchTagDialog } from "../components/BatchTagDialog";
 import { DetailSheet } from "../components/DetailSheet";
 import { AgentToggleSection, type AgentToggleItem } from "../components/AgentToggleSection";
 import { ProjectAgentDots } from "../components/ProjectAgentDots";
+import { PresetWorkspaceActionDialog } from "../components/PresetWorkspaceActionDialog";
 import { SkillMarkdown } from "../components/SkillMarkdown";
 import { DocumentDiffViewer } from "../components/DocumentDiffViewer";
 import { getTagActiveColor, getTagColor } from "../lib/skillTags";
@@ -145,10 +146,11 @@ export function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { projects, managedSkills, refreshManagedSkills, refreshScenarios, refreshProjects } = useApp();
+  const { projects, scenarios, managedSkills, refreshManagedSkills, refreshScenarios, refreshProjects } = useApp();
   const [skills, setSkills] = useState<ProjectSkill[]>([]);
   const [projectAgentTargets, setProjectAgentTargets] = useState<ProjectAgentTarget[]>([]);
   const [selectedExportAgents, setSelectedExportAgents] = useState<string[]>([]);
+  const [managedSkillDirNames, setManagedSkillDirNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [filterMode, setFilterMode] = useState<"all" | "enabled" | "disabled">("all");
@@ -166,6 +168,7 @@ export function ProjectDetail() {
   const [togglingSkill, setTogglingSkill] = useState<string | null>(null);
   const [togglingDetailAgent, setTogglingDetailAgent] = useState<string | null>(null);
   const [showExportDialog, setShowExportDialog] = useState(false);
+  const [showPresetActionDialog, setShowPresetActionDialog] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ProjectSkillGroup | null>(null);
   const [batchDeleteConfirm, setBatchDeleteConfirm] = useState(false);
   const [batchTagDialogOpen, setBatchTagDialogOpen] = useState(false);
@@ -335,6 +338,33 @@ export function ProjectDetail() {
     }
     return map;
   }, [skills]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadManagedSkillDirNames = async () => {
+      if (managedSkills.length === 0) {
+        setManagedSkillDirNames({});
+        return;
+      }
+      try {
+        const slugs = await api.slugifySkillNames(managedSkills.map((skill) => skill.name));
+        if (cancelled) return;
+        const next: Record<string, string> = {};
+        managedSkills.forEach((skill, index) => {
+          next[skill.id] = slugs[index] || skill.name;
+        });
+        setManagedSkillDirNames(next);
+      } catch {
+        if (!cancelled) {
+          setManagedSkillDirNames(Object.fromEntries(managedSkills.map((skill) => [skill.id, skill.name])));
+        }
+      }
+    };
+    loadManagedSkillDirNames();
+    return () => {
+      cancelled = true;
+    };
+  }, [managedSkills]);
 
   useEffect(() => {
     let cancelled = false;
@@ -735,6 +765,37 @@ export function ProjectDetail() {
     await Promise.all([refreshManagedSkills(), loadSkills()]);
   };
 
+  const presetSkillExistsInProject = useCallback(
+    (skill: ManagedSkill, agentKey: string) => {
+      const dirName = managedSkillDirNames[skill.id];
+      if (!dirName) return false;
+      return (projectSkillDirNamesByAgent[agentKey] ?? []).includes(dirName.toLowerCase());
+    },
+    [managedSkillDirNames, projectSkillDirNamesByAgent]
+  );
+
+  const handleAddPresetSkillToProject = useCallback(
+    async (skill: ManagedSkill, agentKey: string) => {
+      if (!id) return;
+      await api.exportSkillToProject(skill.id, id, [agentKey]);
+    },
+    [id]
+  );
+
+  const handleRemovePresetSkillFromProject = useCallback(
+    async (skill: ManagedSkill, agentKey: string) => {
+      if (!id) return;
+      const dirName = managedSkillDirNames[skill.id];
+      if (!dirName) throw new Error("Missing skill directory name");
+      await api.deleteProjectSkill(id, dirName, agentKey);
+    },
+    [id, managedSkillDirNames]
+  );
+
+  const handlePresetActionComplete = useCallback(async () => {
+    await Promise.all([loadSkills(), refreshProjects()]);
+  }, [loadSkills, refreshProjects]);
+
   if (!project) return null;
 
   return (
@@ -754,7 +815,14 @@ export function ProjectDetail() {
             {project.workspace_type === "linked" ? t("project.linkedWorkspaceHint") : t("project.workspaceHint")}
           </p>
         </div>
-        <div className="relative shrink-0 pt-1">
+        <div className="relative flex shrink-0 items-center gap-2 pt-1">
+          <button
+            onClick={() => setShowPresetActionDialog(true)}
+            className="inline-flex items-center gap-1.5 rounded-md border border-border-subtle bg-background px-3 py-2 text-[13px] font-medium text-secondary transition-colors hover:border-border hover:bg-surface-hover"
+          >
+            <Layers className="h-3.5 w-3.5" />
+            {t("presetActions.button")}
+          </button>
           <button
             onClick={() => {
               setShowExportDialog(true);
@@ -1299,6 +1367,20 @@ export function ProjectDetail() {
         allTags={allTags}
         onClose={() => setBatchTagDialogOpen(false)}
         onApply={handleBatchEditTags}
+      />
+
+      <PresetWorkspaceActionDialog
+        open={showPresetActionDialog}
+        title={t("presetActions.applyToProject")}
+        presets={scenarios}
+        managedSkills={managedSkills}
+        agents={exportTargets}
+        initialSelectedAgents={selectedExportAgents}
+        onClose={() => setShowPresetActionDialog(false)}
+        existsInWorkspace={presetSkillExistsInProject}
+        onAddSkill={handleAddPresetSkillToProject}
+        onRemoveSkill={handleRemovePresetSkillFromProject}
+        onComplete={handlePresetActionComplete}
       />
 
       {/* Export from Center Dialog */}

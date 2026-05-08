@@ -7,6 +7,7 @@ import { CloseActionGuard } from "./components/CloseActionGuard";
 import { Layout } from "./components/Layout";
 import { Dashboard } from "./views/Dashboard";
 import { MySkills } from "./views/MySkills";
+import { GlobalWorkspace } from "./views/GlobalWorkspace";
 import { InstallSkills } from "./views/InstallSkills";
 import { Settings } from "./views/Settings";
 import { ProjectDetail } from "./views/ProjectDetail";
@@ -37,6 +38,7 @@ function App() {
             <Route element={<Layout />}>
               <Route path="/" element={<Dashboard />} />
               <Route path="/my-skills" element={<MySkills />} />
+              <Route path="/global-workspace" element={<GlobalWorkspace />} />
               <Route path="/install" element={<InstallSkills />} />
               <Route path="/project/:id" element={<ProjectDetail />} />
               <Route path="/settings" element={<Settings />} />

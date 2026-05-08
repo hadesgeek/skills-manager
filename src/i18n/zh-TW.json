@@ -4,10 +4,11 @@
   },
   "sidebar": {
     "dashboard": "Dashboard",
-    "mySkills": "我的 Skills",
+    "mySkills": "技能庫",
+    "globalWorkspace": "全域工作區",
     "installSkills": "安裝 Skills",
-    "scenarios": "場景",
-    "newScenario": "新增場景",
+    "scenarios": "Preset",
+    "newScenario": "新增 Preset",
     "projects": "專案工作區",
     "addProject": "關聯專案",
     "settings": "設定"
@@ -18,8 +19,8 @@
     "description": "最快的使用路徑是：先選場景，把 Skill 安裝進中央倉庫，再在「我的 Skills」裡決定目前場景要啟用什麼；只有在需要專案內協作、Git 備份或環境設定時，再到對應頁面處理。",
     "items": {
       "scenarios": {
-        "title": "先選一個場景，或新增一個場景",
-        "description": "把工作、學習、客戶專案拆成不同場景。每個場景維護自己的啟用清單、Agent 開關，以及已啟用 Skill 的排序。"
+        "title": "Preset",
+        "description": "把 Skills 組織成命名的 Preset。在全域工作區或專案工作區點擊「套用 Preset」，即可把一組 Skills 加入或移除自選定 Agent。Preset 是可重複使用的範本，套用是一次性操作，不會自動同步。"
       },
       "install": {
         "title": "把 Skill 安裝進中央倉庫",
@@ -47,7 +48,7 @@
     "placeholder": "跳轉到技能、場景、專案或操作…",
     "empty": "沒有符合項目，換個關鍵字試試。",
     "skills": "技能",
-    "scenarios": "場景",
+    "scenarios": "Preset",
     "projects": "專案",
     "actions": "操作",
     "scanImport": "掃描並匯入本機技能",
@@ -69,7 +70,15 @@
     "recentActivity": "近期動態"
   },
   "mySkills": {
-    "title": "我的 Skills",
+    "title": "技能庫",
+    "applyToDefault": "套用 Preset",
+    "applied": "已套用",
+    "notAppliedYet": "尚未套用",
+    "appliedToast": "已套用",
+    "applyMissingDefault": "沒有可用的 Agent — 套用至少需要一個目標位置。",
+    "defaultLocationMissing": "預設目標位置缺失",
+    "openLocationSettings": "開啟設定",
+    "applyCallout": "點擊 Preset 只會開啟瀏覽。使用「套用 Preset」可把其中的 Skills 加入到或移出選中的 Agent。",
     "subtitle": "中央倉庫共 {{count}} 個 Skills 已在「{{scenario}}」場景中啟用",
     "searchPlaceholder": "搜尋中央倉庫中的 Skills...",
     "allStatus": "全部狀態",
@@ -501,16 +510,16 @@
     "goToSettings": "設定"
   },
   "scenario": {
-    "create": "新增場景",
-    "name": "場景名稱",
+    "create": "新增 Preset",
+    "name": "Preset 名稱",
     "description": "描述（選填）",
-    "icon": "場景圖示",
-    "namePlaceholder": "輸入場景名稱...",
-    "descPlaceholder": "簡短描述這個場景的用途...",
-    "deleteConfirm": "確定刪除場景「{{name}}」嗎？Skills 仍會保留在中央倉庫中。",
-    "renamed": "場景已重新命名",
-    "deleted": "場景已刪除",
-    "created": "場景已建立",
+    "icon": "Preset 圖示",
+    "namePlaceholder": "輸入 Preset 名稱...",
+    "descPlaceholder": "簡短描述這個 Preset 的用途...",
+    "deleteConfirm": "確定刪除 Preset「{{name}}」嗎？Skills 仍會保留在中央倉庫中。",
+    "renamed": "Preset 已重新命名",
+    "deleted": "Preset 已刪除",
+    "created": "Preset 已建立",
     "switched": "已切換到「{{name}}」"
   },
   "project": {
@@ -628,5 +637,50 @@
     "batchEditTags": "標籤 ({{count}})",
     "batchTagsUpdated": "已更新 {{count}} 個中心 Skill 的標籤",
     "batchTagsFailed": "{{count}} 個中心 Skill 標籤更新失敗"
+  },
+  "presetActions": {
+    "button": "套用 Preset",
+    "applyToProject": "套用 Preset 到目前專案",
+    "applyToGlobal": "套用 Preset 到全域工作區",
+    "preset": "Preset",
+    "action": "操作",
+    "addMissing": "加入缺少的 Skills",
+    "removeMatching": "移除符合的 Skills",
+    "agents": "Agents",
+    "selectAgents": "請至少選擇一個 Agent",
+    "noPresets": "沒有可用 Preset",
+    "noPresetSkills": "這個 Preset 中沒有 Skills",
+    "addHelp": "只加入缺少的 Skills，已存在的會略過。",
+    "removeHelp": "只從選中的 Agent 中移除已符合的 Skills。",
+    "addSummary": "準備加入 {{count}} 個 Skill-Agent 項，{{skipped}} 個已存在項會略過。",
+    "removeSummary": "已選擇 {{count}} 個已安裝的 Skill-Agent 符合項。",
+    "willAddToAgents": "加入到 {{count}} 個 Agent",
+    "alreadyInSelectedAgents": "已在選中 Agents 中",
+    "installedInAgents": "已安裝於 {{count}} 個 Agent",
+    "notInstalled": "未安裝",
+    "addButton": "加入缺少項 ({{count}})",
+    "removeButton": "移除所選 ({{count}})",
+    "addedToast": "已加入 {{added}} 個 Skill-Agent 項，略過 {{skipped}} 個已存在項。",
+    "removedToast": "已移除 {{removed}} 個 Skill-Agent 項。",
+    "partialFailedToast": "{{count}} 個操作失敗",
+    "nothingToAdd": "沒有缺少 Skills 可加入",
+    "nothingToRemove": "沒有符合 Skills 可移除"
+  },
+  "globalWorkspace": {
+    "title": "全域工作區",
+    "subtitle": "各 Agent 目前全域安裝的 Skills",
+    "skillCount": "{{count}} 個 Skills",
+    "addSkill": "加入 Skill",
+    "removeSkill": "移除",
+    "noAgents": "尚未安裝任何 Agent",
+    "noAgentsHint": "請在設定頁設定 Agent 路徑後再使用。",
+    "noSkillsForAgent": "此 Agent 目前沒有已安裝的 Skills，點擊「加入 Skill」從技能庫加入。",
+    "addSkillDialogTitle": "向 {{agent}} 加入 Skills",
+    "addSkillSearch": "搜尋技能庫…",
+    "allInstalled": "技能庫中的所有 Skills 均已安裝到此 Agent",
+    "noSkillsMatch": "沒有符合的 Skills",
+    "addButton": "加入 {{count}} 個 Skill",
+    "addedToast": "已加入 {{count}} 個 Skill",
+    "removedToast": "已移除 {{name}}"
   }
 }

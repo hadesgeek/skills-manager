@@ -4,10 +4,11 @@
   },
   "sidebar": {
     "dashboard": "Dashboard",
-    "mySkills": "我的 Skills",
+    "mySkills": "技能库",
+    "globalWorkspace": "全局工作区",
     "installSkills": "安装 Skills",
-    "scenarios": "场景",
-    "newScenario": "新建场景",
+    "scenarios": "Preset",
+    "newScenario": "新建 Preset",
     "projects": "项目工作区",
     "addProject": "关联项目",
     "settings": "设置"
@@ -19,11 +20,11 @@
     "items": {
       "workflows": {
         "title": "推荐工作流",
-        "description": "单 Agent 用户：安装 Skill → 点「应用到默认」。可以忽略标签和项目工作区。多项目用户：给 Skill 打标签（如「前端」「调试」），在项目页点「添加 Skill」并按标签筛选，一次推送一组同类 Skill。多机用户：在设置页开启 Git 备份，把中央仓库在多台设备间同步。"
+        "description": "单 Agent 用户：安装 Skill → 点「应用 Preset」并选择 Agent。可以忽略标签和项目工作区。多项目用户：在项目工作区直接添加 Skill，或把 Preset 应用到选中的项目 Agent。多机用户：在设置页开启 Git 备份，把中央仓库在多台设备间同步。"
       },
       "scenarios": {
-        "title": "场景管理",
-        "description": "把工作、学习、客户项目拆成不同场景，每个场景有独立的启用列表、Agent 开关和 Skill 排序。支持命令面板快速切换场景。"
+        "title": "Preset",
+        "description": "把 Skills 组织成命名的 Preset。在全局工作区或项目工作区点击「应用 Preset」，即可把一组 Skills 添加到或移除自选定 Agent。Preset 是可复用模板，应用是一次性操作，不会自动同步。"
       },
       "install": {
         "title": "安装 Skills",
@@ -51,7 +52,7 @@
     "placeholder": "跳转到技能、场景、项目或操作…",
     "empty": "没有匹配项，换个关键词试试。",
     "skills": "技能",
-    "scenarios": "场景",
+    "scenarios": "Preset",
     "projects": "项目",
     "actions": "操作",
     "scanImport": "扫描并导入本地技能",
@@ -73,15 +74,15 @@
     "recentActivity": "近期动态"
   },
   "mySkills": {
-    "title": "我的 Skills",
-    "applyToDefault": "应用到默认",
+    "title": "技能库",
+    "applyToDefault": "应用 Preset",
     "applied": "已应用",
     "notAppliedYet": "尚未应用",
     "appliedToast": "已应用",
     "applyMissingDefault": "没有可用的 Agent — 应用至少需要一个目标位置。",
     "defaultLocationMissing": "默认目标位置缺失",
     "openLocationSettings": "打开设置",
-    "applyCallout": "点击场景现在只是打开浏览，需要点击「应用到默认」才会同步到 Agent。",
+    "applyCallout": "点击 Preset 只会打开浏览。使用「应用 Preset」可把其中的 Skills 添加到或移出选中的 Agent。",
     "subtitle": "中央仓库共 {{count}} 个 Skills 已在“{{scenario}}”场景中启用",
     "searchPlaceholder": "搜索中央仓库中的 Skills...",
     "allStatus": "全部状态",
@@ -568,16 +569,16 @@
     "goToSettings": "设置"
   },
   "scenario": {
-    "create": "新建场景",
-    "name": "场景名称",
+    "create": "新建 Preset",
+    "name": "Preset 名称",
     "description": "描述 (可选)",
-    "icon": "场景图标",
-    "namePlaceholder": "输入场景名称...",
-    "descPlaceholder": "简短描述这个场景的用途...",
-    "deleteConfirm": "确定删除场景 \"{{name}}\" 吗？Skills 仍会保留在中央仓库中。",
-    "renamed": "场景已重命名",
-    "deleted": "场景已删除",
-    "created": "场景已创建",
+    "icon": "Preset 图标",
+    "namePlaceholder": "输入 Preset 名称...",
+    "descPlaceholder": "简短描述这个 Preset 的用途...",
+    "deleteConfirm": "确定删除 Preset \"{{name}}\" 吗？Skills 仍会保留在中央仓库中。",
+    "renamed": "Preset 已重命名",
+    "deleted": "Preset 已删除",
+    "created": "Preset 已创建",
     "switched": "已切换到 \"{{name}}\""
   },
   "project": {
@@ -704,5 +705,50 @@
     "batchEditTags": "标签 ({{count}})",
     "batchTagsUpdated": "已更新 {{count}} 个中心 Skill 的标签",
     "batchTagsFailed": "{{count}} 个中心 Skill 标签更新失败"
+  },
+  "presetActions": {
+    "button": "应用 Preset",
+    "applyToProject": "应用 Preset 到当前项目",
+    "applyToGlobal": "应用 Preset 到全局工作区",
+    "preset": "Preset",
+    "action": "操作",
+    "addMissing": "添加缺失 Skills",
+    "removeMatching": "移除匹配 Skills",
+    "agents": "Agents",
+    "selectAgents": "请至少选择一个 Agent",
+    "noPresets": "没有可用 Preset",
+    "noPresetSkills": "这个 Preset 中没有 Skills",
+    "addHelp": "只添加缺失 Skills，已存在的会跳过。",
+    "removeHelp": "只从选中的 Agent 中移除已匹配的 Skills。",
+    "addSummary": "准备添加 {{count}} 个 Skill-Agent 项，{{skipped}} 个已存在项会跳过。",
+    "removeSummary": "已选择 {{count}} 个已安装的 Skill-Agent 匹配项。",
+    "willAddToAgents": "添加到 {{count}} 个 Agent",
+    "alreadyInSelectedAgents": "已在选中 Agents 中",
+    "installedInAgents": "已安装于 {{count}} 个 Agent",
+    "notInstalled": "未安装",
+    "addButton": "添加缺失 ({{count}})",
+    "removeButton": "移除所选 ({{count}})",
+    "addedToast": "已添加 {{added}} 个 Skill-Agent 项，跳过 {{skipped}} 个已存在项。",
+    "removedToast": "已移除 {{removed}} 个 Skill-Agent 项。",
+    "partialFailedToast": "{{count}} 个操作失败",
+    "nothingToAdd": "没有缺失 Skills 可添加",
+    "nothingToRemove": "没有匹配 Skills 可移除"
+  },
+  "globalWorkspace": {
+    "title": "全局工作区",
+    "subtitle": "各 Agent 当前全局安装的 Skills",
+    "skillCount": "{{count}} 个 Skills",
+    "addSkill": "添加 Skill",
+    "removeSkill": "移除",
+    "noAgents": "未安装任何 Agent",
+    "noAgentsHint": "请在设置页配置 Agent 路径后再使用。",
+    "noSkillsForAgent": "当前 Agent 没有已安装 Skills，点击「添加 Skill」从技能库添加。",
+    "addSkillDialogTitle": "向 {{agent}} 添加 Skills",
+    "addSkillSearch": "搜索技能库…",
+    "allInstalled": "技能库中的所有 Skills 均已安装到此 Agent",
+    "noSkillsMatch": "没有匹配的 Skills",
+    "addButton": "添加 {{count}} 个 Skill",
+    "addedToast": "已添加 {{count}} 个 Skill",
+    "removedToast": "已移除 {{name}}"
   }
 }

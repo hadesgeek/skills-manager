@@ -17,8 +17,6 @@ import {
   Wrench,
   Loader2,
   X,
-  Send,
-  AlertCircle,
   Plus,
   SquareCheck,
   Square,
@@ -129,8 +127,6 @@ export function MySkills() {
   const { t } = useTranslation();
   const {
     viewedScenario,
-    activeScenario: appliedScenario,
-    applyScenarioToDefault,
     tools,
     managedSkills: skills,
     refreshScenarios,
@@ -139,23 +135,6 @@ export function MySkills() {
     openSkillDetailById,
     closeSkillDetail,
   } = useApp();
-  const [applyingDefault, setApplyingDefault] = useState(false);
-  const applyCalloutDismissedKey = "skills-manager.applyCalloutDismissed";
-  const [showApplyCallout, setShowApplyCallout] = useState(() => {
-    try {
-      return localStorage.getItem(applyCalloutDismissedKey) !== "1";
-    } catch {
-      return false;
-    }
-  });
-  const dismissApplyCallout = () => {
-    setShowApplyCallout(false);
-    try {
-      localStorage.setItem(applyCalloutDismissedKey, "1");
-    } catch {
-      // ignore
-    }
-  };
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [filterMode, setFilterMode] = useState<"all" | "enabled" | "available">("all");
   const [sourceFilters, setSourceFilters] = useState<Set<string>>(new Set());
@@ -189,39 +168,6 @@ export function MySkills() {
   const [scenarioSkillOrder, setScenarioSkillOrder] = useState<string[]>([]);
 
   const viewedScenarioName = viewedScenario?.name || t("mySkills.currentScenarioFallback");
-
-  // Stage 1: default targets are simply "all enabled installed agents" —
-  // there's no per-agent differentiation to show, so the status row only
-  // answers "is this scene currently live on disk?".
-  const isApplied = !!viewedScenario && appliedScenario?.id === viewedScenario.id;
-  const hasDefaultTarget = tools.some((t) => t.enabled && t.installed);
-  const defaultTargetMissing = !hasDefaultTarget;
-
-  const handleApplyToDefault = async () => {
-    if (!viewedScenario) return;
-    if (!hasDefaultTarget) {
-      toast.error(t("mySkills.applyMissingDefault"), {
-        action: {
-          label: t("mySkills.openLocationSettings"),
-          onClick: () => {
-            window.history.pushState(null, "", "/settings");
-            window.dispatchEvent(new PopStateEvent("popstate"));
-          },
-        },
-      });
-      return;
-    }
-    setApplyingDefault(true);
-    try {
-      await applyScenarioToDefault(viewedScenario.id);
-      toast.success(t("mySkills.appliedToast"));
-      dismissApplyCallout();
-    } catch (e) {
-      toast.error(getErrorMessage(e, t("common.error")));
-    } finally {
-      setApplyingDefault(false);
-    }
-  };
 
   // Fetch sort order whenever active scenario changes
   useEffect(() => {
@@ -1183,47 +1129,6 @@ export function MySkills() {
           </span>
         </h1>
 
-        {viewedScenario && (
-          <div className="relative flex items-center gap-2">
-            <div className="flex flex-col items-end text-[12px] leading-tight">
-              {defaultTargetMissing ? (
-                <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
-                  <AlertCircle className="h-3.5 w-3.5" />
-                  {t("mySkills.defaultLocationMissing")}
-                </span>
-              ) : isApplied ? (
-                <span className="text-muted">{t("mySkills.applied")}</span>
-              ) : (
-                <span className="text-muted">{t("mySkills.notAppliedYet")}</span>
-              )}
-            </div>
-            <button
-              onClick={handleApplyToDefault}
-              disabled={applyingDefault}
-              className="inline-flex items-center gap-1.5 rounded-md bg-accent px-3 py-2 text-[13px] font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
-              title={!hasDefaultTarget ? t("mySkills.applyMissingDefault") : undefined}
-            >
-              {applyingDefault ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Send className="h-3.5 w-3.5" />
-              )}
-              {t("mySkills.applyToDefault")}
-            </button>
-            {showApplyCallout && (
-              <div className="absolute right-0 top-full z-20 mt-2 w-64 rounded-md border border-border bg-surface p-3 text-[12px] leading-snug shadow-lg">
-                <button
-                  onClick={dismissApplyCallout}
-                  className="absolute right-1.5 top-1.5 rounded p-0.5 text-faint hover:text-secondary"
-                  aria-label={t("common.close")}
-                >
-                  <X className="h-3 w-3" />
-                </button>
-                <p className="pr-4 text-secondary">{t("mySkills.applyCallout")}</p>
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
       <div className="app-toolbar">
