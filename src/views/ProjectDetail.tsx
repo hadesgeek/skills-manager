@@ -911,7 +911,7 @@ export function ProjectDetail() {
       </div>
 
       {allTags.length > 0 && (
-        <div className="mb-3 flex flex-wrap items-center gap-1 px-1">
+        <div className="mb-1.5 flex flex-wrap items-center gap-1 px-1">
           <span className="text-[12px] text-muted">{t("mySkills.tags.filter")}</span>
           <button
             onClick={() => setTagFilters(new Set())}
