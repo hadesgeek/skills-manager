@@ -70,6 +70,13 @@ export interface SourceSkillDocument {
   revision: string;
 }
 
+export interface TranslationDocument {
+  skill_id: string;
+  lang: string;
+  filename: string;
+  content: string;
+}
+
 export interface Scenario {
   id: string;
   name: string;
@@ -211,6 +218,15 @@ export const getSkillDocument = (skillId: string) =>
 
 export const getSourceSkillDocument = (skillId: string) =>
   invoke<SourceSkillDocument>("get_source_skill_document", { skillId });
+
+export const getTranslationDocument = (skillId: string, lang: string) =>
+  invoke<TranslationDocument | null>("get_translation_document", { skillId, lang });
+
+export const saveTranslationDocument = (skillId: string, lang: string, content: string) =>
+  invoke<TranslationDocument>("save_translation_document", { skillId, lang, content });
+
+export const getDescriptionTranslation = (skillId: string, lang: string) =>
+  invoke<string | null>("get_description_translation", { skillId, lang });
 
 export const deleteManagedSkill = (skillId: string) =>
   invoke<void>("delete_managed_skill", { skillId });

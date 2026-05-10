@@ -142,4 +142,14 @@
   .app-badge {
     @apply inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-hover px-2.5 py-1 text-[12px] font-medium text-tertiary;
   }
+
+  /* Translation view: highlight the active block */
+  .translation-block-active {
+    background-color: var(--color-accent-bg);
+    box-shadow: inset 0 0 0 1px var(--color-accent-border);
+    border-radius: 4px;
+    padding: 2px 4px;
+    margin: -2px -4px;
+    transition: background-color 150ms, box-shadow 150ms;
+  }
 }

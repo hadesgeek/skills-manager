@@ -6,21 +6,27 @@ import {
   Github,
   HardDrive,
   Globe,
+  Languages,
+  Loader2,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { cn } from "../utils";
 import {
   getSkillDocument,
   getSourceSkillDocument,
+  getDescriptionTranslation,
   type ManagedSkill,
   type SkillDocument,
   type SourceSkillDocument,
   type SkillToolToggle,
   type ToolInfo,
 } from "../lib/tauri";
+import { translateAndSave, loadCachedTranslation, loadTranslationConfig } from "../lib/translate";
 import { DocumentDiffViewer } from "./DocumentDiffViewer";
 import { DetailSheet } from "./DetailSheet";
 import { SkillMarkdown } from "./SkillMarkdown";
+import { TranslationView } from "./TranslationView";
 import { AgentToggleSection, type AgentToggleItem } from "./AgentToggleSection";
 import { SyncDots } from "./SyncDots";
 
@@ -85,9 +91,17 @@ function SkillDetailPanelContent({
   const [sourceDoc, setSourceDoc] = useState<SourceSkillDocument | null>(null);
   const [loading, setLoading] = useState(true);
   const [isMetadataExpanded, setIsMetadataExpanded] = useState(false);
-  const [contentTab, setContentTab] = useState<"local" | "diff" | "source">("local");
+  const [contentTab, setContentTab] = useState<"local" | "diff" | "source" | "translation">("local");
   const localRequestIdRef = useRef(0);
   const sourceRequestIdRef = useRef(0);
+  // Translation state
+  const [translatedContent, setTranslatedContent] = useState<string | null>(null);
+  const [translating, setTranslating] = useState(false);
+  const [translationLang, setTranslationLang] = useState("Chinese");
+  const [hasTranslationConfig, setHasTranslationConfig] = useState<boolean | null>(null);
+  // Description translation state
+  const [translatedDesc, setTranslatedDesc] = useState<string | null>(null);
+  const [showTranslatedDesc, setShowTranslatedDesc] = useState(false);
   const skillId = skill.id;
   const supportsSourceDiff =
     skill.source_type === "git"
@@ -151,6 +165,49 @@ function SkillDetailPanelContent({
         }
       });
   }, [skillId, supportsSourceDiff, sourceDocVersion]);
+
+  useEffect(() => {
+    loadTranslationConfig().then((config) => {
+      setHasTranslationConfig(config !== null);
+    });
+  }, []);
+
+  // Load cached translations when skill or language changes
+  useEffect(() => {
+    if (!skillId) return;
+    loadCachedTranslation(skillId, translationLang).then((cached) => {
+      if (cached) {
+        setTranslatedContent(cached);
+      }
+    });
+    // Load cached description translation
+    getDescriptionTranslation(skillId, translationLang).then((cached) => {
+      if (cached) {
+        setTranslatedDesc(cached);
+        setShowTranslatedDesc(true);
+      } else {
+        setTranslatedDesc(null);
+        setShowTranslatedDesc(false);
+      }
+    }).catch(() => {});
+  }, [skillId, translationLang]);
+
+  const handleTranslate = async () => {
+    const content = activeDoc?.content;
+    if (!content) return;
+    setTranslating(true);
+    setContentTab("translation");
+    try {
+      const result = await translateAndSave(skillId, content, translationLang);
+      setTranslatedContent(result);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error(msg);
+      setContentTab("local");
+    } finally {
+      setTranslating(false);
+    }
+  };
 
   const sourceIcon = (type: string) => {
     switch (type) {
@@ -273,8 +330,37 @@ function SkillDetailPanelContent({
   return (
     <DetailSheet
       open={true}
-      title={skill.name}
-      description={skill.description ? <p className="line-clamp-3">{skill.description}</p> : undefined}
+      title={
+        <span className="flex items-center gap-2">
+          <span>{skill.name}</span>
+          {skill.description && translatedDesc && (
+            showTranslatedDesc ? (
+              <button
+                type="button"
+                onClick={() => setShowTranslatedDesc(false)}
+                className="inline-flex items-center gap-0.5 rounded-full bg-accent/10 px-1.5 py-0.5 text-[11px] font-medium text-accent transition-colors hover:bg-accent/20"
+                title={t("mySkills.showOriginalDesc")}
+              >
+                <Languages className="h-3 w-3" />
+                {t("mySkills.showOriginal")}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowTranslatedDesc(true)}
+                className="inline-flex items-center gap-0.5 rounded-full bg-surface-hover px-1.5 py-0.5 text-[11px] font-medium text-muted transition-colors hover:text-secondary"
+                title={t("mySkills.showTranslatedDesc")}
+              >
+                <Languages className="h-3 w-3" />
+                {t("mySkills.showTranslated")}
+              </button>
+            )
+          )}
+        </span>
+      }
+      description={skill.description ? (
+        <p className="line-clamp-3">{showTranslatedDesc && translatedDesc ? translatedDesc : skill.description}</p>
+      ) : undefined}
       meta={meta}
       onClose={onClose}
     >
@@ -287,9 +373,9 @@ function SkillDetailPanelContent({
         />
       )}
 
-      {supportsSourceDiff && (
-        <div className="mb-4 flex flex-wrap items-center gap-2">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
           {(["local", "diff", "source"] as const).map((tab) => (
+            !supportsSourceDiff && (tab === "diff" || tab === "source") ? null : (
             <button
               key={tab}
               type="button"
@@ -308,17 +394,85 @@ function SkillDetailPanelContent({
                   ? t("mySkills.docTabs.diff")
                   : t("mySkills.docTabs.source")}
             </button>
+            )
           ))}
+          {translatedContent && (
+            <button
+              type="button"
+              onClick={() => setContentTab("translation")}
+              className={cn(
+                "rounded-full px-3 py-1.5 text-[12px] font-medium transition-colors",
+                contentTab === "translation"
+                  ? "bg-accent text-white"
+                  : "bg-surface-hover text-muted hover:text-secondary"
+              )}
+            >
+              {t("mySkills.docTabs.translation")}
+            </button>
+          )}
+          <div className="ml-auto flex items-center gap-1.5">
+            <div className="relative">
+              <select
+                value={translationLang}
+                onChange={(e) => setTranslationLang(e.target.value)}
+                className="h-7 appearance-none rounded-full border border-border-subtle bg-background pl-2 pr-6 text-[11px] text-secondary outline-none"
+              >
+                <option value="Chinese">中文</option>
+                <option value="English">English</option>
+                <option value="Japanese">日本語</option>
+                <option value="Korean">한국어</option>
+                <option value="French">Français</option>
+                <option value="German">Deutsch</option>
+                <option value="Spanish">Español</option>
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-muted" />
+            </div>
+            <button
+              type="button"
+              onClick={handleTranslate}
+              disabled={translating || !hasTranslationConfig || !activeDoc}
+              className={cn(
+                "inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[12px] font-medium transition-colors",
+                translating
+                  ? "bg-accent/20 text-accent cursor-wait"
+                  : "bg-accent text-white hover:opacity-90",
+                (!hasTranslationConfig || !activeDoc) && "opacity-50 cursor-not-allowed"
+              )}
+              title={!hasTranslationConfig ? t("mySkills.translateNoConfig") : undefined}
+            >
+              {translating ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Languages className="h-3 w-3" />
+              )}
+              {translating ? t("mySkills.translating") : t("mySkills.translate")}
+            </button>
+          </div>
           {activeSourceDoc && (
             <span className="rounded-full border border-border-subtle bg-surface px-2 py-1 text-[12px] text-muted">
               {activeSourceDoc.source_label} · {activeSourceDoc.revision.slice(0, 7)}
             </span>
           )}
         </div>
-      )}
 
       {loading ? (
         <div className="mt-12 text-center text-[13px] text-muted">{t("common.loading")}</div>
+      ) : contentTab === "translation" ? (
+        translating ? (
+          <div className="mt-12 flex flex-col items-center gap-3 text-[13px] text-muted">
+            <Loader2 className="h-5 w-5 animate-spin text-accent" />
+            {t("mySkills.translating")}
+          </div>
+        ) : translatedContent && activeDoc ? (
+          <TranslationView
+            original={activeDoc.content}
+            translated={translatedContent}
+            skillName={skill.name}
+            skillDescription={skill.description}
+          />
+        ) : (
+          <div className="mt-12 text-center text-[13px] text-muted">{t("mySkills.translationEmpty")}</div>
+        )
       ) : contentTab === "diff" ? (
         activeDoc && activeSourceDoc ? (
           <DocumentDiffViewer original={activeDoc.content} updated={activeSourceDoc.content} />

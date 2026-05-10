@@ -39,6 +39,7 @@ import { useThemeContext } from "../context/ThemeContext";
 import { AgentIcon } from "../components/AgentIcon";
 import * as api from "../lib/tauri";
 import { applyTextSize } from "../lib/textScale";
+import { PROVIDER_DEFAULTS, type TranslationProvider } from "../lib/translate";
 import type { AppUpdateInfo } from "../lib/tauri";
 import type { Theme } from "../hooks/useTheme";
 
@@ -104,6 +105,12 @@ export function Settings() {
   const [customProjectPath, setCustomProjectPath] = useState("");
   const [addingCustom, setAddingCustom] = useState(false);
   const [showMoreAgents, setShowMoreAgents] = useState(false);
+  // Translation API config
+  const [translationProvider, setTranslationProvider] = useState<TranslationProvider>("openai");
+  const [translationApiUrl, setTranslationApiUrl] = useState("");
+  const [translationApiKey, setTranslationApiKey] = useState("");
+  const [translationModel, setTranslationModel] = useState("");
+  const [translationSaving, setTranslationSaving] = useState(false);
 
   const GITHUB_URL = "https://github.com/xingkongliang/skills-manager";
 
@@ -222,6 +229,10 @@ export function Settings() {
     });
     api.getSettings("text_size").then((v) => { if (v) { setTextSize(v); applyTextSize(v); } });
     api.getSettings("skillsmp_api_key").then((v) => { if (v) setSkillsmpApiKey(v); });
+    api.getSettings("translation_api_provider").then((v) => { if (v) setTranslationProvider(v as TranslationProvider); });
+    api.getSettings("translation_api_url").then((v) => { if (v) setTranslationApiUrl(v); });
+    api.getSettings("translation_api_key").then((v) => { if (v) setTranslationApiKey(v); });
+    api.getSettings("translation_api_model").then((v) => { if (v) setTranslationModel(v); });
     api.getCentralRepoPath().then((path) => {
       setCentralRepoPath(path);
       setCentralRepoPathInput(path);
@@ -442,6 +453,33 @@ export function Settings() {
       toast.error(t("common.error"));
     } finally {
       setGitRemoteSaving(false);
+    }
+  };
+
+  const handleTranslationProviderChange = (provider: TranslationProvider) => {
+    setTranslationProvider(provider);
+    if (!translationApiUrl || Object.values(PROVIDER_DEFAULTS.urls).includes(translationApiUrl)) {
+      setTranslationApiUrl(PROVIDER_DEFAULTS.urls[provider]);
+    }
+    if (!translationModel || Object.values(PROVIDER_DEFAULTS.models).includes(translationModel)) {
+      setTranslationModel(PROVIDER_DEFAULTS.models[provider]);
+    }
+  };
+
+  const handleSaveTranslationApi = async () => {
+    setTranslationSaving(true);
+    try {
+      await Promise.all([
+        api.setSettings("translation_api_provider", translationProvider),
+        api.setSettings("translation_api_url", translationApiUrl.trim()),
+        api.setSettings("translation_api_key", translationApiKey.trim()),
+        api.setSettings("translation_api_model", translationModel.trim()),
+      ]);
+      toast.success(t("settings.translationApi.saved"));
+    } catch {
+      toast.error(t("common.error"));
+    } finally {
+      setTranslationSaving(false);
     }
   };
 
@@ -1248,6 +1286,88 @@ export function Settings() {
                   className={`${actionButtonClass} bg-surface-hover hover:bg-surface-active text-tertiary border-border`}
                 >
                   {skillsmpSaving ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <Key className="w-3 h-3" />
+                  )}
+                  {t("common.save")}
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Translation API */}
+        <section>
+          <h2 className="app-section-title mb-3">
+            {t("settings.translationApi.title")}
+          </h2>
+          <div className="app-panel overflow-hidden divide-y divide-border-subtle">
+            <div className="px-4 py-3 space-y-3">
+              <div>
+                <h3 className="text-[13px] text-secondary font-medium mb-0.5">{t("settings.translationApi.provider")}</h3>
+                <p className="text-[13px] text-muted mb-2">{t("settings.translationApi.providerDesc")}</p>
+                <div className="flex flex-wrap rounded-[4px] border border-border-subtle bg-background p-px">
+                  {([
+                    { value: "openai" as const, label: "OpenAI" },
+                    { value: "gemini" as const, label: "Gemini" },
+                    { value: "anthropic" as const, label: "Anthropic" },
+                  ]).map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => handleTranslationProviderChange(opt.value)}
+                      className={cn(
+                        segmentedButtonClass,
+                        translationProvider === opt.value
+                          ? "bg-surface-active text-secondary"
+                          : "text-muted hover:text-tertiary"
+                      )}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="text-[12px] text-muted mb-1 block">{t("settings.translationApi.url")}</label>
+                <p className="text-[12px] text-muted mb-1.5">{t("settings.translationApi.urlDesc")}</p>
+                <input
+                  type="text"
+                  value={translationApiUrl}
+                  onChange={(e) => setTranslationApiUrl(e.target.value)}
+                  placeholder={PROVIDER_DEFAULTS.urls[translationProvider]}
+                  className={`${fieldClass} w-full font-mono`}
+                />
+              </div>
+              <div>
+                <label className="text-[12px] text-muted mb-1 block">{t("settings.translationApi.key")}</label>
+                <input
+                  type="password"
+                  value={translationApiKey}
+                  onChange={(e) => setTranslationApiKey(e.target.value)}
+                  placeholder="sk-..."
+                  className={`${fieldClass} w-full font-mono`}
+                />
+              </div>
+              <div>
+                <label className="text-[12px] text-muted mb-1 block">{t("settings.translationApi.model")}</label>
+                <p className="text-[12px] text-muted mb-1.5">{t("settings.translationApi.modelDesc")}</p>
+                <input
+                  type="text"
+                  value={translationModel}
+                  onChange={(e) => setTranslationModel(e.target.value)}
+                  placeholder={PROVIDER_DEFAULTS.models[translationProvider]}
+                  className={`${fieldClass} w-full font-mono`}
+                />
+              </div>
+              <div className="flex justify-end">
+                <button
+                  onClick={handleSaveTranslationApi}
+                  disabled={translationSaving || !translationApiKey.trim()}
+                  className={`${actionButtonClass} bg-accent text-white border-accent hover:opacity-90 disabled:opacity-50`}
+                >
+                  {translationSaving ? (
                     <Loader2 className="w-3 h-3 animate-spin" />
                   ) : (
                     <Key className="w-3 h-3" />

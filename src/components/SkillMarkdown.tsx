@@ -1,23 +1,15 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { cn } from "../utils";
+import { stripFrontmatter } from "../utils/markdownUtils";
 
 interface SkillMarkdownProps {
   content: string;
   className?: string;
 }
 
-function stripMarkdownFrontmatter(content: string) {
-  if (!content.startsWith("---\n")) return content;
-
-  const end = content.indexOf("\n---\n", 4);
-  if (end === -1) return content;
-
-  return content.slice(end + 5).trimStart();
-}
-
 export function SkillMarkdown({ content, className }: SkillMarkdownProps) {
-  const markdown = stripMarkdownFrontmatter(content);
+  const markdown = stripFrontmatter(content);
 
   return (
     <article className={cn("mx-auto w-full max-w-[1240px] text-[13px] leading-6 text-secondary", className)}>

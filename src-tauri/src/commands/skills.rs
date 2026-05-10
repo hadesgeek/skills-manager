@@ -316,6 +316,179 @@ fn read_skill_document_from_dir(dir: &Path) -> Result<(String, String), AppError
     Err(AppError::not_found("No documentation file found"))
 }
 
+fn translation_filename(original: &str, lang_suffix: &str) -> String {
+    // SKILL.md -> SKILL_cn.md, skill.md -> skill_cn.md
+    if let Some(stem) = original.strip_suffix(".md") {
+        format!("{stem}_{lang_suffix}.md")
+    } else {
+        format!("{original}_{lang_suffix}")
+    }
+}
+
+fn lang_to_suffix(lang: &str) -> String {
+    let lower = lang.to_lowercase();
+    match lower.as_str() {
+        "chinese" | "zh" | "zh-cn" | "zh_cn" => "cn".to_string(),
+        "english" | "en" => "en".to_string(),
+        "japanese" | "ja" | "jp" => "ja".to_string(),
+        "korean" | "ko" | "kr" => "ko".to_string(),
+        "french" | "fr" => "fr".to_string(),
+        "german" | "de" => "de".to_string(),
+        "spanish" | "es" => "es".to_string(),
+        _ => lower,
+    }
+}
+
+#[derive(Debug, Serialize)]
+pub struct TranslationDocumentDto {
+    pub skill_id: String,
+    pub lang: String,
+    pub filename: String,
+    pub content: String,
+}
+
+#[tauri::command]
+pub async fn get_translation_document(
+    skill_id: String,
+    lang: String,
+    store: State<'_, Arc<SkillStore>>,
+) -> Result<Option<TranslationDocumentDto>, AppError> {
+    let store = store.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let skill = store
+            .get_skill_by_id(&skill_id)
+            .map_err(AppError::db)?
+            .ok_or_else(|| AppError::not_found("Skill not found"))?;
+
+        let dir = Path::new(&skill.central_path);
+        let suffix = lang_to_suffix(&lang);
+
+        // Find the original doc filename to derive the translation filename
+        let candidates = [
+            "SKILL.md",
+            "skill.md",
+            "CLAUDE.md",
+            "claude.md",
+            "README.md",
+            "readme.md",
+        ];
+
+        let original_name = candidates
+            .iter()
+            .find(|name| dir.join(name).exists())
+            .copied();
+
+        let original_name = match original_name {
+            Some(name) => name,
+            None => return Ok(None),
+        };
+
+        let trans_name = translation_filename(original_name, &suffix);
+        let trans_path = dir.join(&trans_name);
+
+        if trans_path.exists() {
+            let content = std::fs::read_to_string(&trans_path)?;
+            Ok(Some(TranslationDocumentDto {
+                skill_id,
+                lang,
+                filename: trans_name,
+                content,
+            }))
+        } else {
+            Ok(None)
+        }
+    })
+    .await?
+}
+
+#[tauri::command]
+pub async fn save_translation_document(
+    skill_id: String,
+    lang: String,
+    content: String,
+    store: State<'_, Arc<SkillStore>>,
+) -> Result<TranslationDocumentDto, AppError> {
+    let store = store.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let skill = store
+            .get_skill_by_id(&skill_id)
+            .map_err(AppError::db)?
+            .ok_or_else(|| AppError::not_found("Skill not found"))?;
+
+        let dir = Path::new(&skill.central_path);
+        let suffix = lang_to_suffix(&lang);
+
+        let candidates = [
+            "SKILL.md",
+            "skill.md",
+            "CLAUDE.md",
+            "claude.md",
+            "README.md",
+            "readme.md",
+        ];
+
+        let original_name = candidates
+            .iter()
+            .find(|name| dir.join(name).exists())
+            .copied()
+            .unwrap_or("SKILL.md");
+
+        let trans_name = translation_filename(original_name, &suffix);
+        let trans_path = dir.join(&trans_name);
+
+        std::fs::write(&trans_path, &content)?;
+
+        Ok(TranslationDocumentDto {
+            skill_id,
+            lang,
+            filename: trans_name,
+            content,
+        })
+    })
+    .await?
+}
+
+#[tauri::command]
+pub async fn get_description_translation(
+    skill_id: String,
+    lang: String,
+    store: State<'_, Arc<SkillStore>>,
+) -> Result<Option<String>, AppError> {
+    let store = store.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let skill = store
+            .get_skill_by_id(&skill_id)
+            .map_err(AppError::db)?
+            .ok_or_else(|| AppError::not_found("Skill not found"))?;
+
+        let dir = Path::new(&skill.central_path);
+        let suffix = lang_to_suffix(&lang);
+
+        // Read the translated SKILL file (e.g. SKILL_cn.md) and extract description from frontmatter
+        let candidates = [
+            "SKILL.md",
+            "skill.md",
+            "CLAUDE.md",
+            "claude.md",
+            "README.md",
+            "readme.md",
+        ];
+
+        for &original_name in &candidates {
+            let trans_name = translation_filename(original_name, &suffix);
+            let trans_path = dir.join(&trans_name);
+            if trans_path.exists() {
+                let content = std::fs::read_to_string(&trans_path)?;
+                let meta = skill_metadata::parse_frontmatter(&content);
+                return Ok(meta.description);
+            }
+        }
+
+        Ok(None)
+    })
+    .await?
+}
+
 fn source_label_for_skill(skill: &SkillRecord) -> String {
     match skill.source_type.as_str() {
         "skillssh" => "skills.sh".to_string(),
