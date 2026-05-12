@@ -36,7 +36,7 @@ export function DetailSheet({
         >
           <X className="h-4 w-4" />
         </button>
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 pt-5 pb-6 scrollbar-hide animate-in fade-in duration-300">
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-6 pt-5 pb-6 scrollbar-hide animate-in fade-in duration-300">
           <h2 className="mb-3 min-w-0 pr-10 text-[28px] font-semibold leading-tight tracking-tight text-primary animate-in slide-in-from-left-2 duration-300">
             <span className="block">{title}</span>
           </h2>
@@ -44,7 +44,7 @@ export function DetailSheet({
             <div className="text-[15px] leading-7 text-secondary">{description}</div>
           ) : null}
           {meta ? <div className="mt-4">{meta}</div> : null}
-          <div className="mt-5">{children}</div>
+          <div className="mt-5 flex flex-1 flex-col min-h-0">{children}</div>
         </div>
       </div>
     </div>,
