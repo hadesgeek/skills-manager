@@ -202,6 +202,7 @@ function SkillDetailPanelContent({
       setTranslatedContent(result);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
+      console.error("[translate] Failed:", msg, e);
       toast.error(msg);
       setContentTab("local");
     } finally {

@@ -129,8 +129,12 @@ export async function loadTranslationConfig(): Promise<TranslationConfig | null>
     getSettings("translation_api_model"),
   ]);
 
-  if (!apiKey) return null;
+  if (!apiKey) {
+    console.warn("[translate] No API key configured");
+    return null;
+  }
 
+  console.log("[translate] Config loaded, provider:", provider || "openai", "hasKey:", !!apiKey);
   return {
     provider: (provider as TranslationProvider) || "openai",
     apiUrl: apiUrl || "",
@@ -207,6 +211,8 @@ export async function translateAndSave(
 
   const { url, headers, body } = buildRequestBody(config, content, targetLang);
 
+  console.log("[translate] POST", url.replace(/key=[^&]+/, "key=***"), "provider:", config.provider, "model:", config.model);
+
   const resp = await fetch(url, {
     method: "POST",
     headers,
@@ -215,6 +221,7 @@ export async function translateAndSave(
 
   if (!resp.ok) {
     const errorText = await resp.text().catch(() => "");
+    console.error("[translate] API error", resp.status, errorText);
     throw new Error(`Translation API error (${resp.status}): ${errorText || resp.statusText}`);
   }
 
