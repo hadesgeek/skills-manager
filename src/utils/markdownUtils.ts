@@ -18,12 +18,11 @@ export function stripFrontmatter(content: string): string {
  */
 export function stripTranslatedPreamble(
   translated: string,
-  original: string,
+  _original: string,
   skillName?: string,
   skillDescription?: string | null,
 ): string {
   let result = translated.trimStart();
-  const trimmedOriginal = original.trimStart();
 
   // Normalize for fuzzy comparison (ignore case and punctuation)
   const normalize = (s: string) => s.toLowerCase().replace(/[^\w\s]/g, "").trim();
